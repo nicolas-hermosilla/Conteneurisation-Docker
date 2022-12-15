@@ -230,3 +230,127 @@ docker compose up -d
  ⠿ Container phpmyadmin     Started
 ```
 
+### a. Qu’apporte le fichier docker-compose par rapport aux commandes docker run ? Pourquoi est-il intéressant ? (cf. ce qui a été présenté pendant le cours)
+* Le fichier est plus structuré et donne donc plus de visibilité à la configuration par rapport au CLI.
+* Nous n'avons pas besoin de lancer 2 commandes, les conteneurs se lancent directement à la suite
+* En faisant un docker compose down, cela supprime tous les conteneurs qui ont été lancés dans le fichier (Gain en temps)
+* C'est très utile pour créer plusieurs conteneurs pour une seule et même application en y indiquant tout dans un seul fichier
+
+### b. Quel moyen permet de configurer (premier utilisateur, première base de données, mot de passe root, …) facilement le conteneur mysql au lancement ?
+
+Il faut ajouter les variables d'environnements suivante dans le docker-compose.yml : 
+
+* MYSQL_USER
+* MYSQL_DATABASE
+* MYSQL_ROOT_PASSWORD
+
+```yaml=
+services:
+  db:
+    image: mysql:5.7
+    restart: always
+    ports:
+      - 3306:3306
+    environment:
+      MYSQL_USER: user
+      MYSQL_ROOT_PASSWORD: P@ssw0rd
+      MYSQL_DATABASE: test
+```
+
+## 5. Observation de l’isolation réseau entre 3 conteneurs
+
+### a. A l’aide de docker-compose et de l’image praqma/network-multitool disponible sur le Docker Hub créer 3 services (web, app et db) et 2 réseaux (frontend et backend).Les services web et db ne devront pas pouvoir effectuer de ping de l’un vers l’autre
+
+```=
+docker pull praqma/network-multitool
+docker images
+REPOSITORY                 TAG       IMAGE ID       CREATED         SIZE
+praqma/network-multitool   latest    1631e536ed7d   11 months ago   39.9MB
+```
+
+- Création du docker compose
+```bash=
+mkdir network-compose
+touch network-compose/docker-compose.yml
+``` 
+```yaml=
+version: '3.1'
+
+services:
+
+  db:
+    image: mysql:5.7
+    container_name: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: P@ssw0rd
+      MYSQL_DATABASE: test
+    ports:
+      - 3306:3306
+    networks:
+      - backend
+
+
+  web:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin
+    restart: always
+    ports:
+      - 8080:80
+    environment:
+      - PMA_ARBITRARY= 1
+    links:
+      - db
+    networks:
+      - frontend
+
+
+  app:
+    image: praqma/network-multitool
+    container_name: network-multitool
+    restart: always
+    networks:
+      - frontend
+      - backend
+
+
+networks:
+  frontend:
+    driver: bridge
+  backend:
+    driver: bridge
+```
+```bash=
+docker compose up -d
+[+] Running 3/3
+ ⠿ Container network-multitool  Started                                                                                                                                        0.8s
+ ⠿ Container mysql              Started                                                                                                                                        0.5s
+ ⠿ Container phpmyadmin         Started                                                                                                                                        1.1s
+
+```
+
+> Les 2 conteneurs mysql et phpmyadmin ne peuvent donc pas se communiquer entre eux
+
+![](https://i.imgur.com/O53Nlqt.png)
+
+### b. Quelles lignes du résultat de la commande docker inspect justifient ce comportement ?
+```bash=
+docker inspect phpmyadmin
+```
+On peut voir les lignes suivantes : 
+- phpmyadmin est dans le réseau frontend avec une adresse IP en 172.29.0.3
+![](https://i.imgur.com/deQV4QE.png)
+
+
+```bash=
+docker inspect mysql
+```
+![](https://i.imgur.com/i9lsUoU.png)
+- mysql est dans le réseau backend avec une adresse IP en 172.30.0.2
+
+### c. Dans quelle situation réelles (avec quelles images) pourrait-on avoir cette configuration réseau ? Dans quel but ?
+
+> Nous pouvons utiliser cette configuration pour isoler différents serveurs qui gèrent des fichiers confidentiels par exemple (image ubuntu).
+> Nous pouvons également isoler les bases de données pour que seuls certains serveurs puissent y accéder (image mysql)
+> Un site web fonctionnant avec l'image Nginx devra être en frontend afin qu'il soit plus cloisoné et sécurisé.
+
