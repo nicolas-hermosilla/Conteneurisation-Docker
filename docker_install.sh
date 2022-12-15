@@ -1,17 +1,3 @@
-# Conteneurisation-Docker
-
-## TP1 conteneurisation et orchestration
-
-
-### Installation de docker et docker-compose via un script bash
-
-https://docs.docker.com/engine/install/ubuntu/
-https://docs.docker.com/compose/install/linux/
-
-* Créer un script docker_install.sh
-* Ajouter le script suivant :
-
-```
 #!/bin/bash
 
 #######################
@@ -33,45 +19,7 @@ sudo apt-get install docker-ce docker-ce-cli containerd.io docker-compose-plugin
 sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
 sudo chmod +x /usr/local/bin/docker-compose
 docker-compose --version
-```
 
-Lancer le script :
-```bash
-chmod 755 docker_install.sh
-./installDocker.sh
-```
-
-### Commandes à tester
-```
-docker run hello-world
-```
-![](https://i.imgur.com/6abfUSl.png)
-
-```
-docker run -it ubuntu bash
-```
-![](https://i.imgur.com/8svtVna.png)
-
-```
-docker images
-```
-![](https://i.imgur.com/1zZTurU.png)
-
-```
-docker ps -a
-```
-![](https://i.imgur.com/DklFqCT.png)
-
-```
-docker run -p 80:80 nginx
-```
-![](https://i.imgur.com/d5kDTV8.png)
-![](https://i.imgur.com/S2kHuWu.png)
-
-```
-docker run -d -p 80:80 nginx
-```
-![](https://i.imgur.com/xSqxjst.png)
-
-![](https://i.imgur.com/DOfL9aJ.png)
-
+#######################
+##Run docker without privileges
+sudo usermod -aG docker $USER
